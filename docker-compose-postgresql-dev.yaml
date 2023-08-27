@@ -17,18 +17,40 @@ services:
     image: postgres:15.2
     restart: always
     ports:
-      - "5432:5432"
+      - 5432:5432
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: password
       PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     volumes:
       - ./postgresql_data:/var/lib/postgresql/data
     networks:
       intranet:
         aliases:
           - postgresql_host
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    environment:
+      DB_USER: app_user
+      DB_PASSWORD: password
+      DB_HOST: postgresql_host
+      DB_NAME: postgres
+      POOL_MODE: session
+      ADMIN_USERS: postgres,app_user
+      AUTH_TYPE: scram-sha-256
+      MAX_CLIENT_CONN: 1100
+    ports:
+      - 6432:5432
+    depends_on:
+      - database
+    networks:
+      intranet:
+        aliases:
+          - postgresql_pool
 
   swagger:
     image: swaggerapi/swagger-ui
